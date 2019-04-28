@@ -14,6 +14,7 @@ curses.noecho()
 curses.curs_set(0)
 snake = Snake(arena_size=(WIDTH,HEIGHT))
 snake.speed = 0.2
+snake.snake_increment = 20
 
 window = curses.newwin(HEIGHT, WIDTH, 0, 0)
 window.nodelay(1)

@@ -1,8 +1,6 @@
 import random
 from vector import Vector
 
-max_speed = 1.0
-
 speed_increments = [2, 5, 10, 15, 20, 25, 30, 50]
 
 def _split_float(value):
@@ -69,13 +67,40 @@ class Snake(object):
         self._speed = 0.2
         self._direction = Direction.UP
         self._offset = 0.0
+        self._snake_inc = 2
+        self._grow = 0
         self._apples = 0
         self._score = 0
         self._apple_points = 100
+        self._max_speed = 1.0
         self._speed_inc = 0.05
         self._max_apples_inc = 20
         self._apple = (0, 0)
         self._new_apple()
+
+    @property
+    def max_speed(self):
+        return self._max_speed
+
+    @max_speed.setter
+    def max_speed(self, value):
+        self._max_speed = float(value)
+
+    @property
+    def speed_increment(self):
+        return self._speed_inc
+
+    @speed_increment.setter
+    def speed_increment(self, value):
+        self._speed_inc = float(value)
+
+    @property
+    def snake_increment(self):
+        return self._snake_inc
+
+    @snake_increment.setter
+    def snake_increment(self, value):
+        self._snake_inc = float(value)
 
     @property
     def apple(self):
@@ -108,10 +133,11 @@ class Snake(object):
     def _set_speed(self):
         if self._apples > speed_increments[-1]:
             if self._apples % self._max_apples_inc:
-                self._speed = min(self._speed + self._speed_inc, max_speed)
+                self._speed = min(self._speed + self._speed_inc,
+                        self._max_speed)
 
         if self._apples in speed_increments:
-            self._speed = min(self._speed + self._speed_inc, max_speed)
+            self._speed = min(self._speed + self._speed_inc, self._max_speed)
 
     def _inc_score(self):
         self._apples += 1
@@ -135,6 +161,10 @@ class Snake(object):
             if (new_head == Vector(*self._apple)):
                 self._new_apple()
                 self._inc_score()
+                self._grow += self._snake_inc
+
+            if self._grow > 0:
+                self._grow -= 1
             else:
                 del self._sections[0]
 
