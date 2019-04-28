@@ -1,66 +1,24 @@
-class Vector(object):
-    @classmethod
-    def from_direction(cls, direction):
-        return Direction.to_vector(direction)
+from vector import Vector
 
-    def __init__(self, x, y):
-        self._x = float(x)
-        self._y = float(y)
+def _split_float(value):
+    intval = int(value)
+    return intval, float(value - intval)
 
-    def _check_type(self, operation, other):
-        if not isinstance(other, Vector):
-            raise ValueError("Can't %s %s and %s types"
-                % (operation, type(self), type(other)))
+def _autorange(a, b):
+    if a < b:
+        return range(a, b + 1)
+    elif b < a:
+        return range(a, b - 1, -1)
 
-    @property
-    def x(self):
-        return self._x
+    return [a]
 
-    @x.setter
-    def x(self, value):
-        self._x = float(value)
-
-    @property
-    def y(self):
-        return self._y
-
-    @y.setter
-    def y(self, value):
-        self._y = float(value)
-
-    def __add__(self, other):
-        self._check_type("add", other)
-        return Vector(self._x + other._x, self._y + other._y)
-
-    def __sub__(self, other):
-        self._check_type("subtract", other)
-        return Vector(self._x - other._x, self._y - other._y)
-
-    def __mul__(self, other):
-        if type(other) in [int, float]:
-            return Vector(self._x * float(other), self._y * float(other))
-
-        self._check_type("multiply", other)
-        return Vector(self._x * other._x, self._y * other._y)
-
-    def __mod__(self, other):
-        if type(other) in [int, float]:
-            return Vector(self._x % float(other), self._y % float(other))
-
-        self._check_type("modulo", other)
-        return Vector(self._x % other._x, self._y % other._y)
-
-    def __float__(self):
-        return float(self._x + self._y)
-
-    def __int__(self):
-        return int(self.__float__())
-
-    def __str__(self):
-        return "%s(x=%.2f, y=%.2f)" % (Vector.__name__, self._x, self._y)
-
-    def __repr__(self):
-        return self.__str__()
+def _line(x0, y0, x1, y1):
+    if x0 == x1:
+        return [(x0, y) for y in _autorange(y0, y1)]
+    elif y0 == y1:
+        return [(x, y0) for x in _autorange(x0, x1)]
+    else:
+        raise ValueError("Can't draw diagonal lines")
 
 class Direction(object):
     NONE = -1
@@ -85,9 +43,9 @@ class Direction(object):
     @classmethod
     def to_vector(cls, direction):
         if direction == cls.UP:
-            return Vector(0, 1)
-        elif direction == cls.DOWN:
             return Vector(0, -1)
+        elif direction == cls.DOWN:
+            return Vector(0, 1)
         elif direction == cls.LEFT:
             return Vector(-1, 0)
         elif direction == cls.RIGHT:
@@ -96,16 +54,12 @@ class Direction(object):
             return Vector(0, 0)
 
 class Snake(object):
-    def __init__(self, initial_position=Vector(15, 15), arena_size=(32, 32)):
-        self._sections = [initial_position]
+    def __init__(self, initial_position=(15, 15), arena_size=(32, 32)):
+        self._sections = [initial_position, (15, 16), (15, 17), (15, 18)]
         self._arena_size = arena_size
         self._speed = 1.0
         self._direction = Direction.UP
-        self._vector = None
-        self._calculate_vector()
-
-    def _calculate_vector(self):
-        self._vector = Direction.to_vector(self._direction) * self._speed
+        self._offset = 0.0
 
     @property
     def speed(self):
@@ -114,19 +68,34 @@ class Snake(object):
     @speed.setter
     def speed(self, value):
         self._speed = float(value)
-        self._calculate_vector()
 
     @property
     def head(self):
-        return self._sections[0]
+        return self._sections[-1]
 
     @property
     def body(self):
-        return self._sections[1:]
+        return self._sections[:-1]
 
-    def tick(self, speed, direction):
+    @property
+    def positions(self):
+        return self._sections
+
+    def _advance(self, direction, num=1):
+        for _ in range(num):
+            v = Direction.to_vector(direction)
+            new_head = (Vector(*self.head) + v) % Vector(*self._arena_size)
+            self._sections.append((new_head.x, new_head.y))
+            del self._sections[0]
+
+    def tick(self, direction):
         if direction not in [Direction.NONE, Direction.opposite(self._direction)]:
-            self._direction = direction
-            self._calculate_vector()
+            if self._direction != direction:
+                self._offset = 0.0
 
-        new_head = Vector(*self.head) + self._vector
+            self._direction = direction
+        
+        self._offset += self._speed
+        if self._offset >= 1.0:
+            num, self._offset = _split_float(self._offset)
+            self._advance(self._direction)
