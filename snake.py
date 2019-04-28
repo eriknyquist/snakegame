@@ -1,7 +1,9 @@
 import random
 from vector import Vector
 
-max_speed = 0.5
+max_speed = 1.0
+
+speed_increments = [2, 5, 10, 15, 20, 25, 30, 50]
 
 def _split_float(value):
     intval = int(value)
@@ -67,12 +69,21 @@ class Snake(object):
         self._speed = 0.2
         self._direction = Direction.UP
         self._offset = 0.0
+        self._apples = 0
+        self._score = 0
+        self._apple_points = 100
+        self._speed_inc = 0.05
+        self._max_apples_inc = 20
         self._apple = (0, 0)
         self._new_apple()
 
     @property
     def apple(self):
         return self._apple
+
+    @property
+    def score(self):
+        return self._score
 
     @property
     def speed(self):
@@ -94,9 +105,22 @@ class Snake(object):
     def positions(self):
         return self._sections
 
+    def _set_speed(self):
+        if self._apples > speed_increments[-1]:
+            if self._apples % self._max_apples_inc:
+                self._speed = min(self._speed + self._speed_inc, max_speed)
+
+        if self._apples in speed_increments:
+            self._speed = min(self._speed + self._speed_inc, max_speed)
+
+    def _inc_score(self):
+        self._apples += 1
+        self._set_speed()
+        self._score += self._apple_points * self._speed
+
     def _new_apple(self):
         old = self._apple
-        while self._apple == old:
+        while (self._apple == old) or (self._apple in self.positions):
             self._apple = (
                 random.randrange(1, self._arena_size[0] - 1),
                 random.randrange(1, self._arena_size[1] - 1)
@@ -110,8 +134,7 @@ class Snake(object):
 
             if (new_head == Vector(*self._apple)):
                 self._new_apple()
-                if self._speed < max_speed:
-                    self._speed += 0.025
+                self._inc_score()
             else:
                 del self._sections[0]
 
