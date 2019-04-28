@@ -173,7 +173,7 @@ class Snake(object):
 
         return True
 
-    def tick(self, direction):
+    def process_input(self, direction):
         if direction not in [Direction.NONE, Direction.opposite(self._direction)]:
             if self._direction != direction:
                 self._offset = 0.0

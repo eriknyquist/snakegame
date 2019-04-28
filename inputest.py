@@ -14,7 +14,7 @@ curses.noecho()
 curses.curs_set(0)
 snake = Snake(arena_size=(WIDTH,HEIGHT))
 snake.speed = 0.2
-snake.snake_increment = 20
+snake.snake_increment = 10
 
 window = curses.newwin(HEIGHT, WIDTH, 0, 0)
 window.nodelay(1)
@@ -50,7 +50,7 @@ def input_loop():
 def draw_screen():
     window.clear()
     window.border(0)
-    if not snake.tick(config.direction):
+    if not snake.process_input(config.direction):
         quit() #dead
 
     for x, y in snake.positions:
