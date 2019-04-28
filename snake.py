@@ -1,4 +1,7 @@
+import random
 from vector import Vector
+
+max_speed = 0.5
 
 def _split_float(value):
     intval = int(value)
@@ -55,11 +58,21 @@ class Direction(object):
 
 class Snake(object):
     def __init__(self, initial_position=(15, 15), arena_size=(32, 32)):
-        self._sections = [initial_position, (15, 16), (15, 17), (15, 18)]
+        self._sections = [
+            (initial_position[0], initial_position[1] - 1),
+            initial_position
+        ]
+
         self._arena_size = arena_size
-        self._speed = 1.0
+        self._speed = 0.2
         self._direction = Direction.UP
         self._offset = 0.0
+        self._apple = (0, 0)
+        self._new_apple()
+
+    @property
+    def apple(self):
+        return self._apple
 
     @property
     def speed(self):
@@ -81,12 +94,31 @@ class Snake(object):
     def positions(self):
         return self._sections
 
+    def _new_apple(self):
+        old = self._apple
+        while self._apple == old:
+            self._apple = (
+                random.randrange(1, self._arena_size[0] - 1),
+                random.randrange(1, self._arena_size[1] - 1)
+            )
+
     def _advance(self, direction, num=1):
         for _ in range(num):
             v = Direction.to_vector(direction)
             new_head = (Vector(*self.head) + v) % Vector(*self._arena_size)
             self._sections.append((new_head.x, new_head.y))
-            del self._sections[0]
+
+            if (new_head == Vector(*self._apple)):
+                self._new_apple()
+                if self._speed < max_speed:
+                    self._speed += 0.025
+            else:
+                del self._sections[0]
+
+            if new_head in self.body:
+                return False
+
+        return True
 
     def tick(self, direction):
         if direction not in [Direction.NONE, Direction.opposite(self._direction)]:
@@ -94,8 +126,11 @@ class Snake(object):
                 self._offset = 0.0
 
             self._direction = direction
-        
+
         self._offset += self._speed
         if self._offset >= 1.0:
             num, self._offset = _split_float(self._offset)
-            self._advance(self._direction)
+            if not self._advance(self._direction):
+                return False
+
+        return True

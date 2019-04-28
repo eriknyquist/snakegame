@@ -65,3 +65,18 @@ class Vector(object):
     def __repr__(self):
         return self.__str__()
 
+    def __eq__(self, other):
+        if isinstance(other, Vector):
+            x = other._x
+            y = other._y
+        elif isinstance(other, tuple):
+            x = other[0]
+            y = other[1]
+        else:
+            raise ValueError("Can't compare %s and %s types"
+                % (Vector.__name__, type(other)))
+
+        return (self._x == x) and (self._y == y)
+
+    def __neq__(self, other):
+        return not self.__neq__(other)
