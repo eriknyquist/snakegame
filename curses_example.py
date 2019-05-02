@@ -58,8 +58,11 @@ def draw_screen(runner):
             runner.stop()
             return
 
-    for x, y in snake.positions:
-        window.addch(int(y), int(x), '#')
+    try:
+        for x, y in snake.positions:
+            window.addstr(int(y), int(x), '#')
+    except curses.error as e:
+        pass
 
     x, y = snake.apple
     window.addch(y, x, 'A')

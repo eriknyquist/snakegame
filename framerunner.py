@@ -1,5 +1,6 @@
 import sched
 import time
+import threading
 
 class FrameRunner(object):
     def __init__(self, fps, handler, args=()):
@@ -7,7 +8,7 @@ class FrameRunner(object):
         self._frames = 0
         self._handler = handler
 	self._args = args
-        self._stopped = False
+        self._stop_event = threading.Event()
         self.set_fps(fps)
 
         self._sched = sched.scheduler(time.time, time.sleep)
@@ -34,18 +35,17 @@ class FrameRunner(object):
         if target_time <= time.time():
             return self._do_handler(None, handler, args)
 
-        if self._stopped:
-            self._stopped = False
-            return
-
-        self._sched.enterabs(target_time, 1, self._do_handler, (target_time, handler, args))
+        if not self._stop_event.is_set():
+            self._sched.enterabs(target_time, 1, self._do_handler,
+                    (target_time, handler, args))
 
     def stop(self):
-        self._stopped = True
+        self._stop_event.set()
         for event in self._sched.queue:
             self._sched.cancel(event)
 
     def run(self):
+        self._stop_event.clear()
         self._initial = time.time()
 	self._do_handler(None, self._do_handler, self._args)
         self._sched.run()
