@@ -1,7 +1,12 @@
+import time
 import random
 from vector import Vector
 
+bonus_time_secs = 10.0
+blink_times = [0.30, 0.15, 0.05]
 speed_increments = [2, 5, 10, 15, 20, 25, 30, 50]
+
+secs_per_blink_increment = bonus_time_secs / float(len(blink_times))
 
 def _split_float(value):
     intval = int(value)
@@ -77,6 +82,11 @@ class Snake(object):
         self._max_apples_inc = 20
         self._distance_since_last_move = 0.0
         self._apple = (0, 0)
+        self._bonus = (None, None)
+        self._bonus_visible = False
+        self._blink_time = 0.0
+        self._last_blink = 0.0
+        self._last_blink_increment = 0.0
         self._new_apple()
 
     @property
@@ -106,6 +116,14 @@ class Snake(object):
     @property
     def apple(self):
         return self._apple
+
+    @property
+    def bonus(self):
+        return self._bonus
+
+    @property
+    def bonus_visible(self):
+        return self._bonus_visible
 
     @property
     def score(self):
@@ -153,6 +171,38 @@ class Snake(object):
                 random.randrange(1, self._arena_size[1] - 1)
             )
 
+        self._new_bonus()
+
+    def _new_bonus(self):
+        self._bonus = (
+            random.randrange(1, self._arena_size[0] - 1),
+            random.randrange(1, self._arena_size[1] - 1)
+        )
+
+        self._blink_time = blink_times[0]
+        self._bonus_visible = True
+        self._last_blink = self._last_blink_increment = time.time()
+
+    def _do_bonus(self):
+        if self._bonus[0] is None:
+            return
+
+        now = time.time()
+        if (now - self._last_blink_increment) >= secs_per_blink_increment:
+            if self._blink_time == blink_times[-1]:
+                # Bonus is over
+                self._bonus = (None, None)
+                self._bonus_visible = False
+                return
+
+            self._last_blink_increment = now
+            new_index = blink_times.index(self._blink_time) + 1
+            self._blink_time = blink_times[new_index]
+
+        if (now - self._last_blink) >= self._blink_time:
+            self._bonus_visible = not self._bonus_visible
+            self._last_blink = now
+
     def _advance(self, direction, num=1):
         for _ in range(num):
             v = Direction.to_vector(direction)
@@ -190,6 +240,7 @@ class Snake(object):
             self._distance_since_last_move = 0.0
             self._direction = direction
 
+        self._do_bonus()
         self._offset += self._speed
         if self._offset >= 1.0:
             num, self._offset = _split_float(self._offset)

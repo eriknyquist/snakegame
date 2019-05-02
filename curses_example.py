@@ -64,8 +64,12 @@ def draw_screen(runner):
     except curses.error as e:
         pass
 
-    x, y = snake.apple
-    window.addch(y, x, 'A')
+    if snake.bonus_visible:
+        bx, by = snake.bonus
+        window.addch(int(by), int(bx), '*')
+
+    ax, ay = snake.apple
+    window.addch(int(ay), int(ax), 'A')
     window.addstr(0, 0, "%d" % snake.score)
     window.refresh()
 
