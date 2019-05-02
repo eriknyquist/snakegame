@@ -75,6 +75,7 @@ class Snake(object):
         self._max_speed = 1.0
         self._speed_inc = 0.05
         self._max_apples_inc = 20
+        self._distance_since_last_move = 0.0
         self._apple = (0, 0)
         self._new_apple()
 
@@ -171,19 +172,28 @@ class Snake(object):
             if new_head in self.body:
                 return False
 
+        self._distance_since_last_move += num
         return True
 
-    def process_input(self, direction):
-        if direction not in [Direction.NONE, Direction.opposite(self._direction)]:
-            if self._direction != direction:
-                self._offset = 0.0
+    def _is_new_direction(self, direction):
+        if (direction in [Direction.NONE, Direction.opposite(self._direction)]):
+            return False
 
+        return direction != self._direction
+
+    def _distance_moved(self):
+        return self._distance_since_last_move + self._offset
+
+    def process_input(self, direction):
+        if self._is_new_direction(direction) and (self._distance_moved() > 1.0):
+            self._offset = 0.0
+            self._distance_since_last_move = 0.0
             self._direction = direction
 
         self._offset += self._speed
         if self._offset >= 1.0:
             num, self._offset = _split_float(self._offset)
-            if not self._advance(self._direction):
+            if not self._advance(self._direction, num):
                 return False
 
         return True

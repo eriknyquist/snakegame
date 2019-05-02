@@ -1,3 +1,4 @@
+import time
 import sys
 import curses
 import threading
@@ -7,24 +8,21 @@ from framerunner import FrameRunner
 from inputs import get_gamepad
 
 HEIGHT = 32
-WIDTH = 48
+WIDTH = 32
 
 curses.initscr()
 curses.noecho()
 curses.curs_set(0)
 snake = Snake(arena_size=(WIDTH,HEIGHT))
 snake.speed = 0.2
-snake.snake_increment = 10
+snake.snake_increment = 2
 
 window = curses.newwin(HEIGHT, WIDTH, 0, 0)
 window.nodelay(1)
 
 class config(object):
+    paused = False
     direction = Direction.UP
-
-def quit():
-    curses.endwin()
-    sys.exit(0)
 
 def _input_id(code, state):
     if state == 0:
@@ -45,13 +43,20 @@ def input_loop():
             if event.ev_type not in ["Absolute", "Key"]:
                 continue
 
+            if event.code == "BTN_START" and event.state == 1:
+                config.paused = not config.paused
+
             config.direction = _input_id(event.code, event.state)
 
-def draw_screen():
+def draw_screen(runner):
     window.clear()
     window.border(0)
-    if not snake.process_input(config.direction):
-        quit() #dead
+
+    if not config.paused:
+        if not snake.process_input(config.direction):
+            time.sleep(2.0)
+            runner.stop()
+            return
 
     for x, y in snake.positions:
         window.addch(int(y), int(x), '#')
@@ -67,10 +72,12 @@ def main():
     inputthread.start()
 
     runner = FrameRunner(30, draw_screen)
+    runner.set_args((runner,))
     runner.run()
+    curses.endwin()
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        quit()
+        curses.endwin()
