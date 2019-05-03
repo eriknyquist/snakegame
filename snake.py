@@ -1,15 +1,14 @@
-import time
 import copy
 from random import randrange
 from vector import Vector
 
 max_apples_between_bonus = 10
 min_apples_between_bonus = 5
-bonus_time_secs = 10.0
-blink_times = [0.30, 0.15, 0.05]
+bonus_time_ticks = 180
+blink_times = [9, 5, 1]
 speed_increments = [2, 5, 10, 15, 20, 25, 30, 50]
 
-secs_per_blink_increment = bonus_time_secs / float(len(blink_times))
+ticks_per_blink_increment = bonus_time_ticks / float(len(blink_times))
 
 def _split_float(value):
     intval = int(value)
@@ -79,6 +78,7 @@ class Snake(object):
         self._offset = 0.0
         self._snake_inc = 2
         self._grow = 0
+        self._ticks = 0
 
         self._apples = 0
         self._score = 0
@@ -92,8 +92,8 @@ class Snake(object):
         self._bonuses = 0.0
         self._bonus_visible = False
         self._blink_time = 0.0
-        self._last_blink = 0.0
-        self._last_blink_increment = 0.0
+        self._last_blink = 0
+        self._last_blink_increment = 0
         self._next_bonus = 0.0
 
         self._new_apple()
@@ -199,15 +199,15 @@ class Snake(object):
 
         self._blink_time = blink_times[0]
         self._bonus_visible = True
-        self._last_blink = self._last_blink_increment = time.time()
+        self._last_blink = self._last_blink_increment = self._ticks
         self._schedule_next_bonus()
 
     def _do_bonus(self):
         if self._bonus[0] is None:
             return
 
-        now = time.time()
-        if (now - self._last_blink_increment) >= secs_per_blink_increment:
+        now = self._ticks
+        if (now - self._last_blink_increment) >= ticks_per_blink_increment:
             if self._blink_time == blink_times[-1]:
                 # Bonus is over
                 self._bonus = (None, None)
@@ -270,6 +270,7 @@ class Snake(object):
         self._position_history.insert(0, copy.copy(self._sections))
 
     def process_input(self, direction):
+        self._ticks += 1
         if self._is_new_direction(direction) and (self._distance_moved() > 1.0):
             self._offset = 0.0
             self._distance_since_last_move = 0.0
