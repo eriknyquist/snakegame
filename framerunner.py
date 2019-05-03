@@ -43,13 +43,15 @@ class FrameRunner(object):
 
     def stop(self):
         self._running = False
-        if not self._event:
+        if self._event is None:
             return
 
         try:
             self._sched.cancel(self._event)
         except ValueError:
             pass
+
+        self._event = None
 
     def run(self):
         self._running = True

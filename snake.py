@@ -1,7 +1,9 @@
 import time
-import random
+from random import randrange
 from vector import Vector
 
+max_apples_between_bonus = 10
+min_apples_between_bonus = 5
 bonus_time_secs = 10.0
 blink_times = [0.30, 0.15, 0.05]
 speed_increments = [2, 5, 10, 15, 20, 25, 30, 50]
@@ -70,24 +72,30 @@ class Snake(object):
 
         self._arena_size = arena_size
         self._speed = 0.2
+        self._max_speed = 1.0
         self._direction = Direction.UP
         self._offset = 0.0
         self._snake_inc = 2
         self._grow = 0
+
         self._apples = 0
         self._score = 0
         self._apple_points = 100
-        self._max_speed = 1.0
         self._speed_inc = 0.05
         self._max_apples_inc = 20
         self._distance_since_last_move = 0.0
+
         self._apple = (0, 0)
         self._bonus = (None, None)
+        self._bonuses = 2
         self._bonus_visible = False
         self._blink_time = 0.0
         self._last_blink = 0.0
         self._last_blink_increment = 0.0
+        self._next_bonus = 0.0
+
         self._new_apple()
+        self._schedule_next_bonus()
 
     @property
     def max_speed(self):
@@ -158,30 +166,35 @@ class Snake(object):
         if self._apples in speed_increments:
             self._speed = min(self._speed + self._speed_inc, self._max_speed)
 
-    def _inc_score(self):
+    def _inc_score(self, multiplier=1.0):
         self._apples += 1
         self._set_speed()
-        self._score += self._apple_points * self._speed
+        self._score += multiplier * (self._apple_points * self._speed)
 
     def _new_apple(self):
         old = self._apple
         while (self._apple == old) or (self._apple in self.positions):
             self._apple = (
-                random.randrange(1, self._arena_size[0] - 1),
-                random.randrange(1, self._arena_size[1] - 1)
+                randrange(1, self._arena_size[0] - 1),
+                randrange(1, self._arena_size[1] - 1)
             )
 
-        self._new_bonus()
+    def _schedule_next_bonus(self):
+        self._next_bonus = (self._apples +
+            randrange(min_apples_between_bonus, max_apples_between_bonus))
 
     def _new_bonus(self):
-        self._bonus = (
-            random.randrange(1, self._arena_size[0] - 1),
-            random.randrange(1, self._arena_size[1] - 1)
-        )
+        self._bonus = self._apple
+        while self._bonus == self._apple:
+            self._bonus = (
+                randrange(1, self._arena_size[0] - 1),
+                randrange(1, self._arena_size[1] - 1)
+            )
 
         self._blink_time = blink_times[0]
         self._bonus_visible = True
         self._last_blink = self._last_blink_increment = time.time()
+        self._schedule_next_bonus()
 
     def _do_bonus(self):
         if self._bonus[0] is None:
@@ -213,6 +226,16 @@ class Snake(object):
                 self._new_apple()
                 self._inc_score()
                 self._grow += self._snake_inc
+
+                if self._apples == self._next_bonus:
+                    self._new_bonus()
+
+            elif ((not self._bonus[0] is None)
+                    and (new_head == Vector(*self._bonus))):
+                self._bonuses += 1
+                self._bonus_visible = False
+                self._bonus = (None, None)
+                self._inc_score(2.0)
 
             if self._grow > 0:
                 self._grow -= 1

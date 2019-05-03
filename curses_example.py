@@ -56,7 +56,8 @@ def draw_screen(runner):
         if not snake.process_input(config.direction):
             time.sleep(2.0)
             runner.stop()
-            return
+            curses.endwin()
+            sys.exit(0)
 
     try:
         for x, y in snake.positions:
@@ -81,7 +82,6 @@ def main():
     runner = FrameRunner(30, draw_screen)
     runner.set_args((runner,))
     runner.run()
-    curses.endwin()
 
 if __name__ == "__main__":
     try:
