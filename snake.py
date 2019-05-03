@@ -1,4 +1,5 @@
 import time
+import copy
 from random import randrange
 from vector import Vector
 
@@ -70,6 +71,7 @@ class Snake(object):
             initial_position
         ]
 
+        self._position_history = []
         self._arena_size = arena_size
         self._speed = 0.2
         self._max_speed = 1.0
@@ -87,7 +89,7 @@ class Snake(object):
 
         self._apple = (0, 0)
         self._bonus = (None, None)
-        self._bonuses = 2
+        self._bonuses = 0.0
         self._bonus_visible = False
         self._blink_time = 0.0
         self._last_blink = 0.0
@@ -136,6 +138,10 @@ class Snake(object):
     @property
     def score(self):
         return self._score
+
+    @property
+    def bonuses(self):
+        return self._bonuses
 
     @property
     def speed(self):
@@ -257,12 +263,19 @@ class Snake(object):
     def _distance_moved(self):
         return self._distance_since_last_move + self._offset
 
+    def _save_position(self):
+        if ((self._bonuses + 1) == len(self._position_history)):
+            self._position_history.pop()
+
+        self._position_history.insert(0, copy.copy(self._sections))
+
     def process_input(self, direction):
         if self._is_new_direction(direction) and (self._distance_moved() > 1.0):
             self._offset = 0.0
             self._distance_since_last_move = 0.0
             self._direction = direction
 
+        self._save_position()
         self._do_bonus()
         self._offset += self._speed
         if self._offset >= 1.0:
