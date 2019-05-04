@@ -67,13 +67,14 @@ def _draw_screen():
 
     ax, ay = snake.apple
     window.addch(int(ay), int(ax), 'A')
-    window.addstr(0, 0, "%d (%d)" % (snake.score, len(snake._position_history)))
+    window.addstr(0, 0, "%d" % snake.score)
     window.refresh()
 
 def do_screen_update(runner):
     if not config.paused:
         if not snake.process_input(config.direction):
             runner.stop()
+            time.sleep(2.0)
             curses.endwin()
             sys.exit(0)
 

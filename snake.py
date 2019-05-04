@@ -2,6 +2,7 @@ import copy
 from random import randrange
 from vector import Vector
 
+history_delay_ticks = 15
 max_apples_between_bonus = 10
 min_apples_between_bonus = 5
 bonus_time_ticks = 180
@@ -94,12 +95,14 @@ class Snake(object):
 
         self._apple = (0, 0)
         self._bonus = (None, None)
-        self._bonuses = 0.0
+        self._bonuses = 0
         self._bonus_visible = False
         self._blink_time = 0.0
         self._last_blink = 0
         self._last_blink_increment = 0
         self._next_bonus = 0.0
+        self._history_reset_ticks = 0
+        self._history_index = 0
 
         self._new_apple()
         self._schedule_next_bonus()
@@ -172,7 +175,7 @@ class Snake(object):
     def positions(self):
         return self._sections
 
-    def reset_to_history(self):
+    def _reset_to_oldest_history(self):
         if not self._position_history:
             return
 
@@ -182,6 +185,15 @@ class Snake(object):
         self._position_history = []
         self._bonuses = 0
         self._offset = 0
+        self._history_reset_ticks = 0
+        self._history_index = 0
+
+    def _load_history_entry(self, index):
+        if not self._position_history:
+            return
+
+        entry = self._position_history[index]
+        self._sections = copy.copy(entry.positions)
 
     def _set_speed(self):
         if self._apples > speed_increments[-1]:
@@ -269,9 +281,13 @@ class Snake(object):
                 del self._sections[0]
 
             if new_head in self.body:
-                return False
+                if self._bonuses == 0:
+                    return False
 
-            self._save_position()
+                self._history_reset_ticks = self._ticks
+
+            else:
+                self._save_position()
 
         self._distance_since_last_move += num
         return True
@@ -286,14 +302,28 @@ class Snake(object):
         return self._distance_since_last_move + self._offset
 
     def _save_position(self):
-        if ((self._bonuses + 2) == len(self._position_history)):
+        if ((self._bonuses + 1) == len(self._position_history)):
             self._position_history.pop()
 
         entry = HistorySnapshot(copy.copy(self._sections), self._direction)
         self._position_history.insert(0, entry)
 
+    def _do_history_reset(self):
+        if (self._ticks - self._history_reset_ticks) >= history_delay_ticks:
+            if self._history_index < len(self._position_history):
+                self._load_history_entry(self._history_index)
+                self._history_reset_ticks = self._ticks
+                self._history_index += 1
+            else:
+                self._reset_to_oldest_history()
+
+        return True
+
     def process_input(self, direction):
         self._ticks += 1
+        if self._history_reset_ticks > 0:
+            return self._do_history_reset()
+
         if self._is_new_direction(direction) and (self._distance_moved() > 1.0):
             self._offset = 0.0
             self._distance_since_last_move = 0.0
