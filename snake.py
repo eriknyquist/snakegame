@@ -30,6 +30,11 @@ def _line(x0, y0, x1, y1):
     else:
         raise ValueError("Can't draw diagonal lines")
 
+class HistorySnapshot(object):
+    def __init__(self, positions, direction):
+        self.positions = positions
+        self.direction = direction
+
 class Direction(object):
     NONE = -1
     UP = 0
@@ -100,6 +105,10 @@ class Snake(object):
         self._schedule_next_bonus()
 
     @property
+    def ticks(self):
+        return self._ticks
+
+    @property
     def max_speed(self):
         return self._max_speed
 
@@ -162,6 +171,17 @@ class Snake(object):
     @property
     def positions(self):
         return self._sections
+
+    def reset_to_history(self):
+        if not self._position_history:
+            return
+
+        entry = self._position_history[-1]
+        self._sections = copy.copy(entry.positions)
+        self._direction = entry.direction
+        self._position_history = []
+        self._bonuses = 0
+        self._offset = 0
 
     def _set_speed(self):
         if self._apples > speed_increments[-1]:
@@ -251,6 +271,8 @@ class Snake(object):
             if new_head in self.body:
                 return False
 
+            self._save_position()
+
         self._distance_since_last_move += num
         return True
 
@@ -264,10 +286,11 @@ class Snake(object):
         return self._distance_since_last_move + self._offset
 
     def _save_position(self):
-        if ((self._bonuses + 1) == len(self._position_history)):
+        if ((self._bonuses + 2) == len(self._position_history)):
             self._position_history.pop()
 
-        self._position_history.insert(0, copy.copy(self._sections))
+        entry = HistorySnapshot(copy.copy(self._sections), self._direction)
+        self._position_history.insert(0, entry)
 
     def process_input(self, direction):
         self._ticks += 1
@@ -276,7 +299,6 @@ class Snake(object):
             self._distance_since_last_move = 0.0
             self._direction = direction
 
-        self._save_position()
         self._do_bonus()
         self._offset += self._speed
         if self._offset >= 1.0:

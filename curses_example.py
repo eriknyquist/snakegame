@@ -48,22 +48,18 @@ def input_loop():
 
             config.direction = _input_id(event.code, event.state)
 
-def draw_screen(runner):
+def _drawsnake(win, snake):
+    for x, y in snake.positions:
+        try:
+            win.addstr(int(y), int(x), '#')
+        except curses.error as e:
+            pass
+
+def _draw_screen():
     window.clear()
     window.border(0)
 
-    if not config.paused:
-        if not snake.process_input(config.direction):
-            time.sleep(2.0)
-            runner.stop()
-            curses.endwin()
-            sys.exit(0)
-
-    try:
-        for x, y in snake.positions:
-            window.addstr(int(y), int(x), '#')
-    except curses.error as e:
-        pass
+    _drawsnake(window, snake)
 
     if snake.bonus_visible:
         bx, by = snake.bonus
@@ -71,15 +67,24 @@ def draw_screen(runner):
 
     ax, ay = snake.apple
     window.addch(int(ay), int(ax), 'A')
-    window.addstr(0, 0, "%d" % snake.score)
+    window.addstr(0, 0, "%d (%d)" % (snake.score, len(snake._position_history)))
     window.refresh()
+
+def do_screen_update(runner):
+    if not config.paused:
+        if not snake.process_input(config.direction):
+            runner.stop()
+            curses.endwin()
+            sys.exit(0)
+
+    _draw_screen()
 
 def main():
     inputthread = threading.Thread(target=input_loop)
     inputthread.daemon = True
     inputthread.start()
 
-    runner = FrameRunner(30, draw_screen)
+    runner = FrameRunner(30, do_screen_update)
     runner.set_args((runner,))
     runner.run()
 
