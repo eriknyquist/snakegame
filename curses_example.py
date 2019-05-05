@@ -16,37 +16,24 @@ curses.curs_set(0)
 snake = Snake(arena_size=(WIDTH,HEIGHT))
 snake.speed = 0.2
 snake.snake_increment = 2
-
 window = curses.newwin(HEIGHT, WIDTH, 0, 0)
-window.nodelay(1)
+window.keypad(1)
 
 class config(object):
     paused = False
     direction = Direction.UP
 
-def _input_id(code, state):
-    if state == 0:
-        return Direction.NONE
-
-    if code == "ABS_HAT0X":
-        return Direction.LEFT if state < 0 else Direction.RIGHT
-
-    if code == "ABS_HAT0Y":
-        return Direction.UP if state < 0 else Direction.DOWN
-
-    return Direction.NONE
-
 def input_loop():
     while True:
-        events = get_gamepad()
-        for event in events:
-            if event.ev_type not in ["Absolute", "Key"]:
-                continue
-
-            if event.code == "BTN_START" and event.state == 1:
-                config.paused = not config.paused
-
-            config.direction = _input_id(event.code, event.state)
+        key = window.getch()
+        if key == curses.KEY_UP:
+            config.direction = Direction.UP
+        elif key == curses.KEY_DOWN:
+            config.direction = Direction.DOWN
+        elif key == curses.KEY_LEFT:
+            config.direction = Direction.LEFT
+        elif key == curses.KEY_RIGHT:
+            config.direction = Direction.RIGHT
 
 def _drawsnake(win, snake):
     for x, y in snake.positions:
