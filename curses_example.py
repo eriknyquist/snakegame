@@ -6,27 +6,40 @@ import threading
 from snake import Direction, Snake
 from framerunner import FrameRunner
 
-HEIGHT = 32
-WIDTH = 48
-
-curses.initscr()
-curses.noecho()
-curses.curs_set(0)
-
-snake = Snake(arena_size=(WIDTH,HEIGHT))
-snake.speed = 0.2
-snake.snake_increment = 2
-
-window = curses.newwin(HEIGHT + 2, WIDTH + 2, 0, 0)
-window.keypad(1)
+HEIGHT = 34
+WIDTH = 50
 
 class config(object):
     paused = False
     direction = Direction.UP
 
-def input_loop(runner):
+def init_game():
+    curses.initscr()
+    curses.noecho()
+    curses.curs_set(0)
+
+    if curses.LINES < HEIGHT:
+        height = curses.LINES
+    else:
+        height = HEIGHT
+
+    if curses.COLS < WIDTH:
+        width = curses.COLS
+    else:
+        width = WIDTH
+
+    window = curses.newwin(height, width, 0, 0)
+    window.keypad(1)
+
+    snake = Snake(arena_size=(width - 2, height - 2))
+    snake.speed = 0.2
+    snake.snake_increment = 2
+
+    return window, snake
+
+def input_loop(win):
     while True:
-        key = window.getch()
+        key = win.getch()
         if key == curses.KEY_UP:
             config.direction = Direction.UP
         elif key == curses.KEY_DOWN:
@@ -36,29 +49,29 @@ def input_loop(runner):
         elif key == curses.KEY_RIGHT:
             config.direction = Direction.RIGHT
 
-def _drawsnake(win, snake):
+def draw_snake(win, snake):
     for x, y in snake.positions:
         try:
             win.addstr(int(y + 1), int(x + 1), '#')
         except curses.error as e:
             pass
 
-def _draw_screen():
-    window.clear()
-    window.border(0)
+def draw_screen(win, snake):
+    win.clear()
+    win.border(0)
 
-    _drawsnake(window, snake)
+    draw_snake(win, snake)
 
     if snake.bonus_visible:
         bx, by = snake.bonus
-        window.addch(int(by + 1), int(bx + 1), '*')
+        win.addch(int(by + 1), int(bx + 1), '*')
 
     ax, ay = snake.apple
-    window.addch(int(ay + 1), int(ax + 1), 'A')
-    window.addstr(0, 0, "Score: %d" % snake.score)
-    window.refresh()
+    win.addch(int(ay + 1), int(ax + 1), 'A')
+    win.addstr(0, 0, "Score: %d" % snake.score)
+    win.refresh()
 
-def do_screen_update(runner):
+def do_screen_update(runner, win, snake):
     if not config.paused:
         if not snake.process_input(config.direction):
             runner.stop()
@@ -66,15 +79,16 @@ def do_screen_update(runner):
             curses.endwin()
             sys.exit(0)
 
-    _draw_screen()
+    draw_screen(win, snake)
 
 def main():
-    inputthread = threading.Thread(target=input_loop, args=(runner,))
+    window, snake = init_game()
+    inputthread = threading.Thread(target=input_loop, args=(window,))
     inputthread.daemon = True
     inputthread.start()
 
     runner = FrameRunner(30, do_screen_update)
-    runner.set_args((runner,))
+    runner.set_args((runner, window, snake))
     runner.run()
 
 if __name__ == "__main__":

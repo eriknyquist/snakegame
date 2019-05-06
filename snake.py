@@ -329,7 +329,13 @@ class Snake(object):
             self._direction = direction
 
         self._do_bonus()
-        self._offset += self._speed
+
+        if self._direction in [Direction.UP, Direction.DOWN]:
+            inc = self._speed * 0.85
+        else:
+            inc = self._speed
+
+        self._offset += inc
         if self._offset >= 1.0:
             num, self._offset = _split_float(self._offset)
             if not self._advance(self._direction, num):
