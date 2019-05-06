@@ -5,25 +5,26 @@ import threading
 
 from snake import Direction, Snake
 from framerunner import FrameRunner
-from inputs import get_gamepad
 
 HEIGHT = 32
-WIDTH = 32
+WIDTH = 48
 
 curses.initscr()
 curses.noecho()
 curses.curs_set(0)
+
 snake = Snake(arena_size=(WIDTH,HEIGHT))
 snake.speed = 0.2
 snake.snake_increment = 2
-window = curses.newwin(HEIGHT, WIDTH, 0, 0)
+
+window = curses.newwin(HEIGHT + 2, WIDTH + 2, 0, 0)
 window.keypad(1)
 
 class config(object):
     paused = False
     direction = Direction.UP
 
-def input_loop():
+def input_loop(runner):
     while True:
         key = window.getch()
         if key == curses.KEY_UP:
@@ -38,7 +39,7 @@ def input_loop():
 def _drawsnake(win, snake):
     for x, y in snake.positions:
         try:
-            win.addstr(int(y), int(x), '#')
+            win.addstr(int(y + 1), int(x + 1), '#')
         except curses.error as e:
             pass
 
@@ -50,11 +51,11 @@ def _draw_screen():
 
     if snake.bonus_visible:
         bx, by = snake.bonus
-        window.addch(int(by), int(bx), '*')
+        window.addch(int(by + 1), int(bx + 1), '*')
 
     ax, ay = snake.apple
-    window.addch(int(ay), int(ax), 'A')
-    window.addstr(0, 0, "%d" % snake.score)
+    window.addch(int(ay + 1), int(ax + 1), 'A')
+    window.addstr(0, 0, "Score: %d" % snake.score)
     window.refresh()
 
 def do_screen_update(runner):
@@ -68,7 +69,7 @@ def do_screen_update(runner):
     _draw_screen()
 
 def main():
-    inputthread = threading.Thread(target=input_loop)
+    inputthread = threading.Thread(target=input_loop, args=(runner,))
     inputthread.daemon = True
     inputthread.start()
 
