@@ -48,6 +48,8 @@ def input_loop(win):
             config.direction = Direction.LEFT
         elif key == curses.KEY_RIGHT:
             config.direction = Direction.RIGHT
+        elif key in [ord('p'), ord('P'), ord(' ')]:
+            config.paused = not config.paused
 
 def draw_snake(win, snake):
     for x, y in snake.positions:
@@ -69,6 +71,7 @@ def draw_screen(win, snake):
     ax, ay = snake.apple
     win.addch(int(ay + 1), int(ax + 1), 'A')
     win.addstr(0, 0, "Score: %d" % snake.score)
+    win.addstr(0, 15, "Bonuses: %d" % snake.bonuses)
     win.refresh()
 
 def do_screen_update(runner, win, snake):
